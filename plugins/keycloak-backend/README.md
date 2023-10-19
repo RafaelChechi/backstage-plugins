@@ -127,6 +127,7 @@ yarn workspace backend add @janus-idp/backstage-plugin-keycloak-backend
            # highlight-add-start
            userQuerySize: 500 # Optional
            groupQuerySize: 250 # Optional
+           searchByGroup: 'groupName' # Optional
            # highlight-add-end
    ```
 
@@ -204,6 +205,7 @@ The following table describes the parameters that you can configure to enable th
 | `clientSecret`   | Client Secret to authenticate                                                                                                                   | ""            | Yes if using client credentials based authentication |
 | `userQuerySize`  | Number of users to query at a time                                                                                                              | `100`         | No                                                   |
 | `groupQuerySize` | Number of groups to query at a time                                                                                                             | `100`         | No                                                   |
+| `searchByGroup`  | Search by group                                                                                                                                 | `""`         | No                                                   |
 
 When using client credentials, the access type must be set to `confidential` and service accounts must be enabled. You must also add the following roles from the `realm-management` client role:
 

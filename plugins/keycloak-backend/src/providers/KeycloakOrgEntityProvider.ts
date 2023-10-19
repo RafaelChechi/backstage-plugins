@@ -211,6 +211,7 @@ export class KeycloakOrgEntityProvider implements EntityProvider {
     const { users, groups } = await readKeycloakRealm(kcAdminClient, provider, {
       userQuerySize: provider.userQuerySize,
       groupQuerySize: provider.groupQuerySize,
+      searchByGroup: provider.searchByGroup,
       userTransformer: this.options.userTransformer,
       groupTransformer: this.options.groupTransformer,
     });

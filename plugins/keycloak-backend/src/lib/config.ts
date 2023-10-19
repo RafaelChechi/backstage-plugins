@@ -92,6 +92,14 @@ export type KeycloakProviderConfig = {
    * @see https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_groups_resource
    */
   groupQuerySize?: number;
+
+  /**
+   * Search by group
+   * @defaultValue ''
+   * @remarks
+   * 
+   */
+  searchByGroup?: string;
 };
 
 export const readProviderConfigs = (
@@ -105,21 +113,19 @@ export const readProviderConfigs = (
   }
 
   return providersConfig.keys().map(id => {
+   
     const providerConfigInstance = providersConfig.getConfig(id);
 
     const baseUrl = providerConfigInstance.getString('baseUrl');
     const realm = providerConfigInstance.getOptionalString('realm') ?? 'master';
-    const loginRealm =
-      providerConfigInstance.getOptionalString('loginRealm') ?? 'master';
+    const loginRealm = providerConfigInstance.getOptionalString('loginRealm') ?? 'master';
     const username = providerConfigInstance.getOptionalString('username');
     const password = providerConfigInstance.getOptionalString('password');
     const clientId = providerConfigInstance.getOptionalString('clientId');
-    const clientSecret =
-      providerConfigInstance.getOptionalString('clientSecret');
-    const userQuerySize =
-      providerConfigInstance.getOptionalNumber('userQuerySize');
-    const groupQuerySize =
-      providerConfigInstance.getOptionalNumber('groupQuerySize');
+    const clientSecret = providerConfigInstance.getOptionalString('clientSecret');
+    const userQuerySize = providerConfigInstance.getOptionalNumber('userQuerySize');
+    const groupQuerySize = providerConfigInstance.getOptionalNumber('groupQuerySize');
+    const searchByGroup = providerConfigInstance.getOptionalString('searchByGroup');
 
     if (clientId && !clientSecret) {
       throw new Error(
@@ -143,8 +149,8 @@ export const readProviderConfigs = (
 
     const schedule = providerConfigInstance.has('schedule')
       ? readTaskScheduleDefinitionFromConfig(
-          providerConfigInstance.getConfig('schedule'),
-        )
+        providerConfigInstance.getConfig('schedule'),
+      )
       : undefined;
 
     return {
@@ -159,6 +165,7 @@ export const readProviderConfigs = (
       schedule,
       userQuerySize,
       groupQuerySize,
+      searchByGroup
     };
   });
 };

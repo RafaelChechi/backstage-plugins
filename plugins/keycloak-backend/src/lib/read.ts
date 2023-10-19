@@ -26,7 +26,7 @@ import { KeycloakProviderConfig } from './config';
 import {
   KEYCLOAK_ENTITY_QUERY_SIZE,
   KEYCLOAK_ID_ANNOTATION,
-  KEYCLOAK_REALM_ANNOTATION,
+  KEYCLOAK_REALM_ANNOTATION
 } from './constants';
 import { noopGroupTransformer, noopUserTransformer } from './transformers';
 import {
@@ -36,6 +36,12 @@ import {
   UserRepresentationWithEntity,
   UserTransformer,
 } from './types';
+
+export const parseFulfilled = <T>(arr: PromiseSettledResult<T>[]): T[] => {
+  return arr
+    .filter(item => item.status === 'fulfilled')
+    .map(result => (result as PromiseFulfilledResult<T>).value)
+}
 
 export const parseGroup = async (
   keycloakGroup: GroupRepresentationWithParent,
@@ -91,10 +97,10 @@ export const parseUser = async (
         email: user.email,
         ...(user.firstName || user.lastName
           ? {
-              displayName: [user.firstName, user.lastName]
-                .filter(Boolean)
-                .join(' '),
-            }
+            displayName: [user.firstName, user.lastName]
+              .filter(Boolean)
+              .join(' '),
+          }
           : {}),
       },
       memberOf: keycloakGroups
@@ -121,29 +127,36 @@ export async function getEntities<T extends Users | Groups>(
   entities: T,
   config: KeycloakProviderConfig,
   entityQuerySize: number = KEYCLOAK_ENTITY_QUERY_SIZE,
+  entitySearch?: string,
 ): Promise<Awaited<ReturnType<T['find']>>> {
   const rawEntityCount = await entities.count({ realm: config.realm });
-  const entityCount =
-    typeof rawEntityCount === 'number' ? rawEntityCount : rawEntityCount.count;
 
+  const entityCount = typeof rawEntityCount === 'number' ? rawEntityCount : rawEntityCount.count;
   const pageCount = Math.ceil(entityCount / entityQuerySize);
 
   // The next line acts like range in python
   const entityPromises = Array.from(
     { length: pageCount },
-    (_, i) =>
-      entities.find({
+    (_, i) => {
+      const options = {
         realm: config.realm,
         max: entityQuerySize,
         first: i * entityQuerySize,
-      }) as ReturnType<T['find']>,
+        search: entitySearch
+      };
+
+      if (entitySearch) {
+        options.search = entitySearch;
+      }
+
+      return entities.find(options) as ReturnType<T['find']>
+    },
   );
 
-  const entityResults = (await Promise.all(entityPromises)).flat() as Awaited<
-    ReturnType<T['find']>
-  >;
+  const entityResults = await Promise.allSettled(entityPromises);
+  const parsedEntityResults = parseFulfilled(entityResults);
 
-  return entityResults;
+  return parsedEntityResults.flat() as Awaited<ReturnType<T['find']>>;
 }
 
 export const readKeycloakRealm = async (
@@ -152,6 +165,7 @@ export const readKeycloakRealm = async (
   options?: {
     userQuerySize?: number;
     groupQuerySize?: number;
+    searchByGroup?: string;
     userTransformer?: UserTransformer;
     groupTransformer?: GroupTransformer;
   },
@@ -162,32 +176,55 @@ export const readKeycloakRealm = async (
   const kUsers = await getEntities(
     client.users,
     config,
-    options?.userQuerySize,
+    options?.userQuerySize
   );
 
   const rawKGroups = await getEntities(
     client.groups,
     config,
     options?.groupQuerySize,
+    options?.searchByGroup
   );
   const flatKGroups = rawKGroups.reduce((acc, g) => {
     const newAcc = acc.concat(...traverseGroups(g));
     return newAcc;
   }, [] as GroupRepresentationWithParent[]);
-  const kGroups = await Promise.all(
+
+  const kGroups = await Promise.allSettled(
     flatKGroups.map(async g => {
-      g.members = (
-        await client.groups.listMembers({
+      g.members = [];
+
+      let hasMoreResults = true;
+      let page = 0;
+
+      while (hasMoreResults) {
+        const userQuerySize = options?.userQuerySize || KEYCLOAK_ENTITY_QUERY_SIZE;
+        const first = page * userQuerySize;
+
+        const members = await client.groups.listMembers({
           id: g.id!,
-          max: options?.userQuerySize,
+          max: userQuerySize,
+          first: first,
           realm: config.realm,
-        })
-      ).map(m => m.username!);
+        });
+
+        const membersName = members.map(m => m.username!);
+        g.members.push(...membersName);
+
+        if (members.length < userQuerySize) {
+          hasMoreResults = false;
+        }
+
+        page++;
+      }
+
       return g;
     }),
   );
 
-  const parsedGroups = await kGroups.reduce(
+  const parsedKGroups = parseFulfilled(kGroups);
+
+  const parsedGroups = await parsedKGroups.reduce(
     async (promise, g) => {
       const partial = await promise;
       const entity = await parseGroup(

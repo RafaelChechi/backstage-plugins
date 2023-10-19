@@ -36,6 +36,13 @@ export interface Config {
            * @see https://www.keycloak.org/docs-api/11.0/rest-api/index.html#_groups_resource
            */
           groupQuerySize?: number;
+          /**
+           * Search by group
+           * @defaultValue ''
+           * @remarks
+           * 
+           */
+          searchByGroup?: string;
           schedule?: TaskScheduleDefinitionConfig;
         } & (
           | {
