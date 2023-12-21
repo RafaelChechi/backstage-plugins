@@ -126,15 +126,20 @@ export class KeycloakOrgEntityProvider implements EntityProvider {
     options: KeycloakOrgEntityProviderOptions,
   ): KeycloakOrgEntityProvider[] {
     return readProviderConfigs(configRoot).map(providerConfig => {
-      if (!options.schedule && !providerConfig.schedule) {
+      let taskRunner;
+      if (options.scheduler && providerConfig.schedule) {
+        // Create a scheduled task runner using the provided scheduler and schedule configuration
+        taskRunner = options.scheduler.createScheduledTaskRunner(
+          providerConfig.schedule,
+        );
+      } else if (options.schedule) {
+        // Use the provided schedule directly
+        taskRunner = options.schedule;
+      } else {
         throw new Error(
-          `No schedule provided neither via code nor config for MicrosoftGraphOrgEntityProvider:${providerConfig.id}.`,
+          `No schedule provided neither via code nor config for KeycloakOrgEntityProvider:${providerConfig.id}.`,
         );
       }
-
-      const taskRunner =
-        options.schedule ??
-        options.scheduler!.createScheduledTaskRunner(providerConfig.schedule!);
 
       const provider = new KeycloakOrgEntityProvider({
         id: providerConfig.id,
@@ -229,7 +234,7 @@ export class KeycloakOrgEntityProvider implements EntityProvider {
     markCommitComplete();
   }
 
-  private schedule(taskRunner: TaskRunner) {
+  schedule(taskRunner: TaskRunner) {
     this.scheduleFn = async () => {
       const id = `${this.getProviderName()}:refresh`;
       await taskRunner.run({
@@ -243,8 +248,16 @@ export class KeycloakOrgEntityProvider implements EntityProvider {
 
           try {
             await this.read({ logger });
-          } catch (error) {
-            logger.error(error);
+          } catch (error: any) {
+            // Ensure that we don't log any sensitive internal data:
+            logger.error('Error while syncing Keycloak users and groups', {
+              // Default Error properties:
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+              // Additional status code if available:
+              status: error.response?.status,
+            });
           }
         },
       });

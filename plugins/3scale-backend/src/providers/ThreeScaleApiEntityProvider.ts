@@ -60,19 +60,14 @@ export class ThreeScaleApiEntityProvider implements EntityProvider {
 
       let taskRunner;
 
-      if (options.schedule) {
+      if (options.scheduler && providerConfig.schedule) {
+        // Create a scheduled task runner using the provided scheduler and schedule configuration
+        taskRunner = options.scheduler.createScheduledTaskRunner(
+          providerConfig.schedule,
+        );
+      } else if (options.schedule) {
         // Use the provided schedule directly
         taskRunner = options.schedule;
-      } else if (options.scheduler) {
-        if (providerConfig.schedule) {
-          // Create a scheduled task runner using the provided scheduler and schedule configuration
-          taskRunner = options.scheduler.createScheduledTaskRunner(
-            providerConfig.schedule,
-          );
-        } else {
-          // Handle the case where providerConfig.schedule is missing
-          throw new Error('Provider configuration schedule is missing.');
-        }
       } else {
         // Handle the case where both options.schedule and options.scheduler are missing
         throw new Error('Neither schedule nor scheduler is provided.');
@@ -109,8 +104,19 @@ export class ThreeScaleApiEntityProvider implements EntityProvider {
         fn: async () => {
           try {
             await this.run();
-          } catch (error) {
-            this.logger.error(error);
+          } catch (error: any) {
+            // Ensure that we don't log any sensitive internal data:
+            this.logger.error(
+              `Error while syncing 3scale API from ${this.baseUrl}`,
+              {
+                // Default Error properties:
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                // Additional status code if available:
+                status: error.response?.status,
+              },
+            );
           }
         },
       });

@@ -68,13 +68,13 @@ The Topology plugin enables you to visualize the workloads such as Deployment, J
       ...
       customResources:
         - group: 'tekton.dev'
-          apiVersion: 'v1beta1'
+          apiVersion: 'v1'
           plural: 'pipelines'
         - group: 'tekton.dev'
-          apiVersion: 'v1beta1'
+          apiVersion: 'v1'
           plural: 'pipelineruns'
         - group: 'tekton.dev'
-          apiVersion: 'v1beta1'
+          apiVersion: 'v1'
           plural: 'taskruns'
   ```
 
@@ -292,14 +292,14 @@ The Topology plugin enables you to visualize the workloads such as Deployment, J
    import { TopologyPage } from '@janus-idp/backstage-plugin-topology';
 
    const serviceEntityPage = (
-     <EntityPageLayout>
+     <EntityLayout>
        {/* ... */}
        {/* highlight-add-start */}
        <EntityLayout.Route path="/topology" title="Topology">
          <TopologyPage />
        </EntityLayout.Route>
        {/* highlight-add-end */}
-     </EntityPageLayout>
+     </EntityLayout>
    );
    ```
 

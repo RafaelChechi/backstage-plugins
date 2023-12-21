@@ -1,0 +1,21 @@
+{
+  "extends": ["//"],
+  "pipeline": {
+    "start": {
+      "dependsOn": ["generate"]
+    },
+    "tsc": {
+      "outputs": ["../../dist-types/plugins/servicenow-actions/**"],
+      "dependsOn": ["^tsc", "generate"]
+    },
+    "generate": {
+      "outputs": ["src/generated/**"]
+    },
+    "test": {
+      "dependsOn": ["generate"]
+    },
+    "export-dynamic": {
+      "dependsOn": ["generate"]
+    }
+  }
+}

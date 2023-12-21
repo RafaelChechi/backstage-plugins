@@ -82,11 +82,16 @@ export class ManagedClusterProvider implements EntityProvider {
   ) {
     return readOcmConfigs(config).map(provider => {
       const client = hubApiClient(provider, options.logger);
-      const taskRunner =
-        options.schedule ||
-        options.scheduler!.createScheduledTaskRunner(provider.schedule!);
-
-      if (!options.schedule && !provider.schedule) {
+      let taskRunner;
+      if (options.scheduler && provider.schedule) {
+        // Create a scheduled task runner using the provided scheduler and schedule configuration
+        taskRunner = options.scheduler.createScheduledTaskRunner(
+          provider.schedule,
+        );
+      } else if (options.schedule) {
+        // Use the provided schedule directly
+        taskRunner = options.schedule;
+      } else {
         throw new Error(
           `No schedule provided neither via code nor config for "${provider.id}" hub.`,
         );
@@ -114,8 +119,19 @@ export class ManagedClusterProvider implements EntityProvider {
         fn: async () => {
           try {
             await this.run();
-          } catch (error) {
-            this.logger.error(error);
+          } catch (error: any) {
+            // Ensure that we don't log any sensitive internal data:
+            this.logger.error(
+              'Error while syncing cluster resources from Open Cluster Management',
+              {
+                // Default Error properties:
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                // Additional status code if available:
+                status: error.response?.status,
+              },
+            );
           }
         },
       });

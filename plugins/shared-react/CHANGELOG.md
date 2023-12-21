@@ -1,3 +1,44 @@
+## @janus-idp/shared-react [2.2.0](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@2.1.0...@janus-idp/shared-react@2.2.0) (2023-12-20)
+
+
+### Features
+
+* **tekton:** add view logs and view sbom actions in the pipelineRun list ([#1003](https://github.com/janus-idp/backstage-plugins/issues/1003)) ([c7eff5f](https://github.com/janus-idp/backstage-plugins/commit/c7eff5f33daef8eaba58df7e987b44f09c7a8ff9))
+
+## @janus-idp/shared-react [2.1.0](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@2.0.1...@janus-idp/shared-react@2.1.0) (2023-12-14)
+
+
+### Features
+
+* **tekton:** add support for downloading task and pipelinerun logs ([#1014](https://github.com/janus-idp/backstage-plugins/issues/1014)) ([f588292](https://github.com/janus-idp/backstage-plugins/commit/f5882921756a7aa6d5a74d8fdb6bfc52a7c0c209))
+
+## @janus-idp/shared-react [2.0.1](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@2.0.0...@janus-idp/shared-react@2.0.1) (2023-11-23)
+
+
+### Bug Fixes
+
+* **tekton:** update tekton version in the documentation ([#958](https://github.com/janus-idp/backstage-plugins/issues/958)) ([51cc924](https://github.com/janus-idp/backstage-plugins/commit/51cc924b1341d04aa75a1713713c8a6700b2c0a3))
+
+## @janus-idp/shared-react [2.0.0](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@1.3.3...@janus-idp/shared-react@2.0.0) (2023-10-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **tekton:** update tekton UX (#839)
+
+### Features
+
+* **tekton:** update tekton UX ([#839](https://github.com/janus-idp/backstage-plugins/issues/839)) ([789c945](https://github.com/janus-idp/backstage-plugins/commit/789c945580b8f82349a5c62b98c77d5dbf4781f1))
+
+## @janus-idp/shared-react [1.3.3](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@1.3.2...@janus-idp/shared-react@1.3.3) (2023-10-19)
+
+## @janus-idp/shared-react [1.3.2](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@1.3.1...@janus-idp/shared-react@1.3.2) (2023-10-16)
+
+
+### Bug Fixes
+
+* **tekton:** fix pipelinerun status icon color ([#734](https://github.com/janus-idp/backstage-plugins/issues/734)) ([c800f98](https://github.com/janus-idp/backstage-plugins/commit/c800f987afc9a96bec93c13295d8fdb0c5964a93))
+
 ## @janus-idp/shared-react [1.3.1](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@1.3.0...@janus-idp/shared-react@1.3.1) (2023-09-22)
 
 ## @janus-idp/shared-react [1.3.0](https://github.com/janus-idp/backstage-plugins/compare/@janus-idp/shared-react@1.2.2...@janus-idp/shared-react@1.3.0) (2023-08-14)

@@ -1,22 +1,22 @@
-import { EntityReferencedPolicy } from '@janus-idp/backstage-plugin-rbac-common';
+import { RoleBasedPolicy } from '@janus-idp/backstage-plugin-rbac-common';
 
 import {
   validateEntityReference,
   validatePolicy,
-  validatePolicyQueries,
+  validateRole,
 } from './policies-validation';
 
 describe('rest data validation', () => {
   describe('validate entity referenced policy', () => {
     it('should return an error when entity reference is empty', () => {
-      const policy: EntityReferencedPolicy = {};
+      const policy: RoleBasedPolicy = {};
       const err = validatePolicy(policy);
       expect(err).toBeTruthy();
       expect(err?.message).toEqual(`'entityReference' must not be empty`);
     });
 
     it('should return an error when permission is empty', () => {
-      const policy: EntityReferencedPolicy = {
+      const policy: RoleBasedPolicy = {
         entityReference: 'user:default/guest',
       };
       const err = validatePolicy(policy);
@@ -25,7 +25,7 @@ describe('rest data validation', () => {
     });
 
     it('should return an error when policy is empty', () => {
-      const policy: EntityReferencedPolicy = {
+      const policy: RoleBasedPolicy = {
         entityReference: 'user:default/guest',
         permission: 'catalog-entity',
       };
@@ -35,7 +35,7 @@ describe('rest data validation', () => {
     });
 
     it('should return an error when effect is empty', () => {
-      const policy: EntityReferencedPolicy = {
+      const policy: RoleBasedPolicy = {
         entityReference: 'user:default/guest',
         permission: 'catalog-entity',
         policy: 'read',
@@ -46,7 +46,7 @@ describe('rest data validation', () => {
     });
 
     it('should return an error when effect has an invalid value', () => {
-      const policy: EntityReferencedPolicy = {
+      const policy: RoleBasedPolicy = {
         entityReference: 'user:default/guest',
         permission: 'catalog-entity',
         policy: 'read',
@@ -60,7 +60,7 @@ describe('rest data validation', () => {
     });
 
     it(`pass validation when all fields are valid. Effect 'allow' should be valid`, () => {
-      const policy: EntityReferencedPolicy = {
+      const policy: RoleBasedPolicy = {
         entityReference: 'user:default/guest',
         permission: 'catalog-entity',
         policy: 'read',
@@ -71,7 +71,7 @@ describe('rest data validation', () => {
     });
 
     it(`pass validation when all fields are valid. Effect 'deny' should be valid`, () => {
-      const policy: EntityReferencedPolicy = {
+      const policy: RoleBasedPolicy = {
         entityReference: 'user:default/guest',
         permission: 'catalog-entity',
         policy: 'read',
@@ -151,6 +151,10 @@ describe('rest data validation', () => {
           ref: 'user:',
           expectedError: `Entity reference "user:" was not on the form [<kind>:][<namespace>/]<name>`,
         },
+        {
+          ref: 'admin:default/test',
+          expectedError: `Unsupported kind admin. List supported values ["user", "group", "role"]`,
+        },
       ];
       for (const entityRef of invalidOrUnsupportedEntityRefs) {
         const err = validateEntityReference(entityRef.ref);
@@ -164,6 +168,7 @@ describe('rest data validation', () => {
         'user:default/guest',
         'user:default/John Doe',
         'user:default/John Doe/developer',
+        'role:default/team-a',
       ];
       for (const entityRef of invalidOrUnsupportedEntityRefs) {
         const err = validateEntityReference(entityRef);
@@ -172,41 +177,22 @@ describe('rest data validation', () => {
     });
   });
 
-  describe('validatePolicyQueries', () => {
-    it('should return an error when "permission" query param is missing', () => {
-      const request = { query: { policy: 'read', effect: 'allow' } } as any;
-      const err = validatePolicyQueries(request);
+  describe('validateRole', () => {
+    it('should return an error when "memberReferences" query param is missing', () => {
+      const request = { name: 'role:default/user' } as any;
+      const err = validateRole(request);
       expect(err).toBeTruthy();
-      expect(err?.message).toEqual('specify "permission" query param.');
-    });
-
-    it('should return an error when "policy" query param is missing', () => {
-      const request = {
-        query: { permission: 'user:default/guest', effect: 'allow' },
-      } as any;
-      const err = validatePolicyQueries(request);
-      expect(err).toBeTruthy();
-      expect(err?.message).toEqual('specify "policy" query param.');
-    });
-
-    it('should return an error when "effect" query param is missing', () => {
-      const request = {
-        query: { permission: 'user:default/guest', policy: 'read' },
-      } as any;
-      const err = validatePolicyQueries(request);
-      expect(err).toBeTruthy();
-      expect(err?.message).toEqual('specify "effect" query param.');
+      expect(err?.message).toEqual(
+        `'memberReferences' field must not be empty`,
+      );
     });
 
     it('should pass validation when all required query params are present', () => {
       const request = {
-        query: {
-          permission: 'user:default/guest',
-          policy: 'read',
-          effect: 'allow',
-        },
+        memberReferences: ['user:default/guest'],
+        name: 'role:default/user',
       } as any;
-      const err = validatePolicyQueries(request);
+      const err = validateRole(request);
       expect(err).toBeUndefined();
     });
   });

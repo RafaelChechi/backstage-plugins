@@ -29,6 +29,9 @@ export const useTags = (organization: string, repository: string) => {
   const [tagManifestLayers, setTagManifestLayers] = React.useState<
     Record<string, Layer>
   >({});
+  const [tagManifestStatuses, setTagManifestStatuses] = React.useState<
+    Record<string, string>
+  >({});
   const localClasses = useLocalStyles();
 
   const fetchSecurityDetails = async (tag: Tag) => {
@@ -46,13 +49,19 @@ export const useTags = (organization: string, repository: string) => {
       tagsResponse.tags.map(async tag => {
         const securityDetails = await fetchSecurityDetails(tag);
         const securityData = securityDetails.data;
-        if (!securityData) {
-          return;
-        }
-        setTagManifestLayers(prevState => ({
+        const securityStatus = securityDetails.status;
+
+        setTagManifestStatuses(prevState => ({
           ...prevState,
-          [tag.manifest_digest]: securityData.Layer,
+          [tag.manifest_digest]: securityStatus,
         }));
+
+        if (securityData) {
+          setTagManifestLayers(prevState => ({
+            ...prevState,
+            [tag.manifest_digest]: securityData.Layer,
+          }));
+        }
       }),
     );
     setTags(prevTags => [...prevTags, ...tagsResponse.tags]);
@@ -64,6 +73,7 @@ export const useTags = (organization: string, repository: string) => {
       const hashFunc = tag.manifest_digest.substring(0, 6);
       const shortHash = tag.manifest_digest.substring(7, 19);
       return {
+        id: `${tag.manifest_digest}-${tag.name}`,
         name: tag.name,
         last_modified: formatDate(tag.last_modified),
         size: formatByteSize(tag.size),
@@ -75,6 +85,7 @@ export const useTags = (organization: string, repository: string) => {
         ),
         expiration: tag.expiration,
         securityDetails: tagManifestLayers[tag.manifest_digest],
+        securityStatus: tagManifestStatuses[tag.manifest_digest],
         manifest_digest_raw: tag.manifest_digest,
         // is_manifest_list: tag.is_manifest_list,
         // reversion: tag.reversion,
@@ -83,7 +94,7 @@ export const useTags = (organization: string, repository: string) => {
         // manifest_list: tag.manifest_list,
       };
     });
-  }, [tags, tagManifestLayers, localClasses.chip]);
+  }, [tags, localClasses.chip, tagManifestLayers, tagManifestStatuses]);
 
   return { loading, data };
 };

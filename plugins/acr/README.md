@@ -17,14 +17,15 @@ The Azure Container Registry (ACR) plugin displays information about your contai
    ```yaml
    # app-config.yaml
    proxy:
-     '/acr/api':
-       target: 'https://mycontainerregistry.azurecr.io/acr/v1/'
-       changeOrigin: true
-       headers:
-         # If you use Bearer Token for authorization, please replace the 'Basic' with 'Bearer' in the following line.
-         Authorization: 'Basic ${ACR_AUTH_TOKEN}'
-       # Change to "false" in case of using self hosted artifactory instance with a self-signed certificate
-       secure: true
+     endpoints:
+       '/acr/api':
+         target: 'https://mycontainerregistry.azurecr.io/acr/v1/'
+         changeOrigin: true
+         headers:
+           # If you use Bearer Token for authorization, please replace the 'Basic' with 'Bearer' in the following line.
+           Authorization: 'Basic ${ACR_AUTH_TOKEN}'
+         # Change to "false" in case of using self hosted artifactory instance with a self-signed certificate
+         secure: true
    ```
 
 1. Set the authorization using one of the following options:
@@ -55,22 +56,18 @@ The Azure Container Registry (ACR) plugin displays information about your contai
    /* highlight-add-end */
 
    const serviceEntityPage = (
-     <EntityPageLayout>
+     <EntityLayout>
        // ...
        {/* highlight-add-start */}
-       <EntityLayout.Route path="/acr" title="ACR">
-         <Grid container spacing={3} alignItems="stretch">
-           <EntitySwitch>
-             <EntitySwitch.Case if={e => Boolean(isAcrAvailable(e))}>
-               <Grid item sm={12}>
-                 <AcrPage />
-               </Grid>
-             </EntitySwitch.Case>
-           </EntitySwitch>
-         </Grid>
+       <EntityLayout.Route
+         if={e => Boolean(isAcrAvailable(e))}
+         path="/acr"
+         title="ACR"
+       >
+         <AcrPage />
        </EntityLayout.Route>
        {/* highlight-add-end */}
-     </EntityPageLayout>
+     </EntityLayout>
    );
    ```
 

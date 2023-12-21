@@ -7,11 +7,13 @@ import {
   EntityKubernetesContent,
   KubernetesApi,
   kubernetesApiRef,
+  KubernetesProxyApi,
+  kubernetesProxyApiRef,
 } from '@backstage/plugin-kubernetes';
 import { TestApiProvider } from '@backstage/test-utils';
 
 import { mockKubernetesPlrResponse } from '../src/__fixtures__/1-pipelinesData';
-import { LatestPipelineRun, TektonPage, tektonPlugin } from '../src/plugin';
+import { TektonCI, tektonPlugin } from '../src/plugin';
 
 const mockEntity: Entity = {
   apiVersion: 'backstage.io/v1alpha1',
@@ -21,7 +23,7 @@ const mockEntity: Entity = {
     description: 'backstage.io',
     annotations: {
       'backstage.io/kubernetes-id': 'backstage',
-      'janus-idp.io/tekton-enabled': 'true',
+      'janus-idp.io/tekton': 'app',
     },
   },
   spec: {
@@ -31,6 +33,21 @@ const mockEntity: Entity = {
   },
 };
 
+class MockKubernetesProxyApi implements KubernetesProxyApi {
+  async getPodLogs(_request: any): Promise<any> {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({
+          text: `\nstreaming logs from container: ${_request.containerName} \n...`,
+        });
+      }, 500);
+    });
+  }
+
+  async getEventsByInvolvedObjectName(): Promise<any> {
+    return {};
+  }
+}
 class MockKubernetesClient implements KubernetesApi {
   readonly resources;
 
@@ -55,6 +72,7 @@ class MockKubernetesClient implements KubernetesApi {
       },
     );
   }
+
   async getWorkloadsByEntity(_request: any): Promise<any> {
     return {
       items: [
@@ -97,6 +115,18 @@ class MockKubernetesClient implements KubernetesApi {
     return [{ name: 'mock-cluster', authProvider: 'serviceAccount' }];
   }
 
+  async getCluster(_clusterName: string): Promise<
+    | {
+        name: string;
+        authProvider: string;
+        oidcTokenProvider?: string;
+        dashboardUrl?: string;
+      }
+    | undefined
+  > {
+    return { name: 'mock-cluster', authProvider: 'serviceAccount' };
+  }
+
   async proxy(_options: { clusterName: String; path: String }): Promise<any> {
     return {
       kind: 'Namespace',
@@ -117,33 +147,16 @@ createDevApp()
             kubernetesApiRef,
             new MockKubernetesClient(mockKubernetesPlrResponse),
           ],
+          [kubernetesProxyApiRef, new MockKubernetesProxyApi()],
         ]}
       >
         <EntityProvider entity={mockEntity}>
-          <TektonPage />
+          <TektonCI />
         </EntityProvider>
       </TestApiProvider>
     ),
-    title: 'Tekton Page',
+    title: 'Tekton CI',
     path: '/tekton',
-  })
-  .addPage({
-    element: (
-      <TestApiProvider
-        apis={[
-          [
-            kubernetesApiRef,
-            new MockKubernetesClient(mockKubernetesPlrResponse),
-          ],
-        ]}
-      >
-        <EntityProvider entity={mockEntity}>
-          <LatestPipelineRun url="/tekton" linkTekton />
-        </EntityProvider>
-      </TestApiProvider>
-    ),
-    title: 'PipelineRun Visualization',
-    path: '/pipelinerun-vis',
   })
   .addPage({
     element: (

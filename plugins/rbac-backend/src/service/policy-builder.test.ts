@@ -6,14 +6,17 @@ import { Adapter, Enforcer, FileAdapter } from 'casbin';
 import { Router } from 'express';
 import TypeORMAdapter from 'typeorm-adapter';
 
-import { CasbinDBAdapterFactory } from './casbin-adapter-factory';
+import { CasbinDBAdapterFactory } from '../database/casbin-adapter-factory';
 import { RBACPermissionPolicy } from './permission-policy';
 import { PolicesServer as PoliciesServer } from './policies-rest-api';
 import { PolicyBuilder } from './policy-builder';
 
 const mockEnforcer: Partial<Enforcer> = {
   loadPolicy: jest.fn().mockImplementation(async () => {}),
-  enableAutoSave: jest.fn().mockImplementation((_enable: boolean) => {}),
+  enableAutoSave: jest.fn().mockImplementation(() => {}),
+  setRoleManager: jest.fn().mockImplementation(() => {}),
+  enableAutoBuildRoleLinks: jest.fn().mockImplementation(() => {}),
+  buildRoleLinks: jest.fn().mockImplementation(() => {}),
 };
 
 jest.mock('casbin', () => {
@@ -35,7 +38,7 @@ const mockDataBaseAdapterFactory: Partial<CasbinDBAdapterFactory> = {
   }),
 };
 
-jest.mock('./casbin-adapter-factory', () => {
+jest.mock('../database/casbin-adapter-factory', () => {
   return {
     CasbinDBAdapterFactory: jest.fn((): Partial<CasbinDBAdapterFactory> => {
       return mockDataBaseAdapterFactory;
@@ -97,13 +100,20 @@ describe('PolicyBuilder', () => {
     })),
   };
 
-  const mockDatabaseManager = {
-    getClient: jest.fn().mockImplementation(),
-  };
-
   const mockDiscovery = {
     getBaseUrl: jest.fn(),
     getExternalBaseUrl: jest.fn(),
+  };
+
+  const tokenManagerMock = {
+    getToken: jest.fn().mockImplementation(),
+    authenticate: jest.fn().mockImplementation(),
+  };
+
+  const backendPluginIDsProviderMock = {
+    getPluginIds: jest.fn().mockImplementation(() => {
+      return [];
+    }),
   };
 
   beforeEach(async () => {
@@ -111,24 +121,27 @@ describe('PolicyBuilder', () => {
   });
 
   it('should build policy server with file adapter', async () => {
-    const router = await PolicyBuilder.build({
-      config: new ConfigReader({
-        backend: {
-          database: {
-            client: 'better-sqlite3',
-            connection: ':memory:',
+    const router = await PolicyBuilder.build(
+      {
+        config: new ConfigReader({
+          backend: {
+            database: {
+              client: 'better-sqlite3',
+              connection: ':memory:',
+            },
           },
-        },
-        permission: {
-          enabled: true,
-        },
-      }),
-      logger: getVoidLogger(),
-      discovery: mockDiscovery,
-      identity: mockIdentityClient,
-      permissions: mockPermissionEvaluator,
-      database: mockDatabaseManager,
-    });
+          permission: {
+            enabled: true,
+          },
+        }),
+        logger: getVoidLogger(),
+        discovery: mockDiscovery,
+        identity: mockIdentityClient,
+        permissions: mockPermissionEvaluator,
+        tokenManager: tokenManagerMock,
+      },
+      backendPluginIDsProviderMock,
+    );
 
     expect(FileAdapter).toHaveBeenCalled();
     expect(mockEnforcer.loadPolicy).toHaveBeenCalled();
@@ -142,29 +155,32 @@ describe('PolicyBuilder', () => {
   });
 
   it('should build policy server with database adapter', async () => {
-    const router = await PolicyBuilder.build({
-      config: new ConfigReader({
-        backend: {
-          database: {
-            client: 'better-sqlite3',
-            connection: ':memory:',
-          },
-        },
-        permission: {
-          enabled: true,
-          rbac: {
+    const router = await PolicyBuilder.build(
+      {
+        config: new ConfigReader({
+          backend: {
             database: {
-              enabled: true,
+              client: 'better-sqlite3',
+              connection: ':memory:',
             },
           },
-        },
-      }),
-      logger: getVoidLogger(),
-      discovery: mockDiscovery,
-      identity: mockIdentityClient,
-      permissions: mockPermissionEvaluator,
-      database: mockDatabaseManager,
-    });
+          permission: {
+            enabled: true,
+            rbac: {
+              database: {
+                enabled: true,
+              },
+            },
+          },
+        }),
+        logger: getVoidLogger(),
+        discovery: mockDiscovery,
+        identity: mockIdentityClient,
+        permissions: mockPermissionEvaluator,
+        tokenManager: tokenManagerMock,
+      },
+      backendPluginIDsProviderMock,
+    );
     expect(CasbinDBAdapterFactory).toHaveBeenCalled();
     expect(mockEnforcer.loadPolicy).toHaveBeenCalled();
     expect(mockEnforcer.enableAutoSave).toHaveBeenCalled();

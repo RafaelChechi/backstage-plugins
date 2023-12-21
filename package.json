@@ -7,12 +7,13 @@
   },
   "scripts": {
     "preinstall": "npx only-allow yarn",
-    "start": "turbo run start",
-    "start:backstage": "turbo run start --filter=...{./packages/app} --filter=...{./packages/backend}",
-    "start:plugins": "turbo run start --filter=...{./plugins/*}",
+    "start:backstage": "turbo run start:backstage",
+    "start:plugins": "turbo run start --filter=@janus-idp/*",
+    "start:storybook": "yarn --cwd packages/storybook start",
     "build": "turbo run build",
-    "build:backstage": "turbo run build --filter=...{./packages/*}",
-    "build:plugins": "turbo run build --filter=...{./plugins/*}",
+    "build:backstage": "turbo run build --filter=...{./packages/app} --filter=...{./packages/backend}",
+    "build:plugins": "turbo run build --filter=@janus-idp/*",
+    "build:storybook": "yarn --cwd packages/storybook build",
     "tsc": "turbo run tsc",
     "clean": "turbo run clean",
     "test": "turbo run test",
@@ -33,31 +34,34 @@
     ]
   },
   "devDependencies": {
-    "@backstage/cli": "0.22.9",
-    "@ianvs/prettier-plugin-sort-imports": "4.1.0",
+    "@backstage/cli": "0.23.0",
+    "@ianvs/prettier-plugin-sort-imports": "4.1.1",
     "@janus-idp/cli": "*",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/exec": "6.0.3",
     "@semantic-release/git": "10.0.1",
-    "@semantic-release/github": "9.0.6",
+    "@semantic-release/github": "9.2.1",
     "@semrel-extra/npm": "1.2.2",
     "@spotify/prettier-config": "15.0.0",
-    "conventional-changelog-conventionalcommits": "<7.0.0",
+    "conventional-changelog-conventionalcommits": "6.1.0",
+    "eslint-plugin-jest": "27.4.2",
     "husky": "8.0.3",
-    "eslint-plugin-jest": "27.4.0",
-    "lint-staged": "14.0.1",
+    "lint-staged": "15.0.1",
     "multi-semantic-release": "3.0.2",
     "prettier": "3.0.3",
-    "turbo": "1.10.0",
-    "typescript": "5.0.4"
+    "turbo": "1.10.15",
+    "typescript": "5.2.2"
   },
   "resolutions": {
-    "@types/react": "^17.0.2",
-    "@types/react-dom": "^17.0.2"
+    "@types/react": "^17.0.68",
+    "@types/react-dom": "^17.0.21"
   },
   "lint-staged": {
     "*": "turbo run prettier:fix --",
     "*.{js,jsx,ts,tsx,mjs,cjs}": "turbo run lint:fix --"
+  },
+  "jest": {
+    "testTimeout": 15000
   },
   "release": {
     "branches": "main",
@@ -131,12 +135,28 @@
       ],
       "@semantic-release/changelog",
       "@semrel-extra/npm",
-      "@semantic-release/git",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "CHANGELOG.md",
+            "package.json",
+            "dist-dynamic/package.json",
+            "dist-dynamic/yarn.lock"
+          ]
+        }
+      ],
       [
         "@semantic-release/github",
         {
           "successComment": false,
           "releasedLabels": false
+        }
+      ],
+      [
+        "@semantic-release/exec",
+        {
+          "successCmd": "if [ -d 'dist-dynamic' ]; then echo 'publishing backend derived package ...' && cd dist-dynamic && npm pkg delete scripts && npm publish --registry https://registry.npmjs.org/ --access public ; fi"
         }
       ]
     ]
